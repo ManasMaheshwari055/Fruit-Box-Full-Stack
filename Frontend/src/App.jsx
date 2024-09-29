@@ -13,7 +13,6 @@ import VendorDashboard from '../vendordashboard/VendorDashboard';
 import AboutUs from './Components/AboutUs';
 import ViewOrders from '../vendordashboard/ViewOrders';
 import AddProduct from '../vendordashboard/AddProduct';
-import DashboardNavbar from './dashboard/DasboardNavbar'; // Import your DashboardNavbar
 import Invoice from './Components/invoice';
 
 function App() {
@@ -22,6 +21,7 @@ function App() {
         return savedCart ? JSON.parse(savedCart) : [];
     });
 
+    const [notification, setNotification] = useState(''); // State for notification message
     const navigate = useNavigate();
 
     // Add items to cart function
@@ -29,6 +29,10 @@ function App() {
         const updatedCart = [...cartItems, newItem];
         setCartItems(updatedCart);
         localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+
+        // Show notification
+        setNotification("Product added to the cart");
+        setTimeout(() => setNotification(''), 3000); // Clear notification after 3 seconds
     }
 
     // Remove items from cart function
@@ -63,7 +67,7 @@ function App() {
                 <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} clearCart={clearCart} />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/vendorsignup" element={<VendorSignup />} />
-                <Route path="/userdashboard" element={<UserDashboard />} />
+                <Route path="/userdashboard" element={<UserDashboard clearCart={clearCart} />} />
                 <Route path="/fruitsection" element={<FruitSection addToCart={addToCart} />} />
                 <Route path="/veggiesection" element={<VeggieSection addToCart={addToCart} />} />
                 <Route path="/vendordashboard" element={<VendorDashboard />} />

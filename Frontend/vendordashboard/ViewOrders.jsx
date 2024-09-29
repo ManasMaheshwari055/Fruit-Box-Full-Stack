@@ -4,9 +4,9 @@ import VendorNavbar from './VendorNavbar';
 
 const ViewOrders = () => {
     const [orders, setOrders] = useState([
-        { id: 1, user: 'John', product: 'Apple', quantity: 10, status: 'Pending' },
-        { id: 2, user: 'Emily', product: 'Banana', quantity: 5, status: 'Pending' },
-        { id: 3, user: 'Michael', product: 'Carrot', quantity: 8, status: 'Pending' }
+        // { id: 1, user: 'John', product: 'Apple', quantity: 10, status: 'Pending' },
+        // { id: 2, user: 'Emily', product: 'Banana', quantity: 5, status: 'Pending' },
+        // { id: 3, user: 'Michael', product: 'Carrot', quantity: 8, status: 'Pending' }
     ]);
 
     const handleAcceptOrder = (id) => {

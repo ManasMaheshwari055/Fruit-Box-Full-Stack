@@ -1,7 +1,8 @@
+// DashboardNavbar.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function DashboardNavbar() {
+function DashboardNavbar({ clearCart }) {
     const navItems = (
         <>
             <li>
@@ -17,10 +18,10 @@ function DashboardNavbar() {
     );
 
     const handleLogout = () => {
-        // Implement your logout logic here
+        // Call clearCart before logging out
+        clearCart();
         console.log("Logging out...");
-        // Example: Redirect to login page
-        window.location.href = '/login';
+        window.location.href = '/';
     };
 
     return (
@@ -97,7 +98,10 @@ function DashboardNavbar() {
                             </label>
                         </div>
                         <Link to="/">
-                            <button className="p-2.5 border-2 border-none text-white rounded-md bg-[#191E24] hover:bg-[#2A2F36] transition duration-300 ease-in-out">
+                            <button 
+                                className="p-2.5 border-2 border-none text-white rounded-md bg-[#191E24] hover:bg-[#2A2F36] transition duration-300 ease-in-out"
+                                onClick={handleLogout}
+                            >
                                 Logout
                             </button>
                         </Link>
