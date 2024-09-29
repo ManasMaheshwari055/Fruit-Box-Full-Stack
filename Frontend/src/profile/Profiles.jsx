@@ -1,12 +1,12 @@
 import React from 'react'
-import Navbar from '../Components/Navbar'
+import DashboardNavbar from '../dashboard/DasboardNavbar'
 import Profile from '../Components/Profile'
 import Footer from '../Components/Footer'
 
 function Profiles() {
   return (
     <>
-        <Navbar />
+        <DashboardNavbar/>
         <div className="min-h-screen">
             <Profile />
         </div>

@@ -17,7 +17,7 @@ function VeggieSection({ addToCart }) {
 
     const handleAddToCart = (product) => {
         addToCart(product);
-        navigate('/cart');
+        // navigate('/cart');
     };
 
     return (
