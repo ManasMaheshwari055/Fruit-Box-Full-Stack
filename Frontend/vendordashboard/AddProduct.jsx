@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import VendorNavbar from './VendorNavbar';
+import axios from 'axios';
 
 const AddProduct = () => {
     const [product, setProduct] = useState({
@@ -7,7 +9,10 @@ const AddProduct = () => {
         price: '',
         quantity: '',
     });
+    const [error, setError] = useState(null); // For handling any errors
+    const [success, setSuccess] = useState(false); // For handling success state
 
+  
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setProduct({
@@ -16,13 +21,27 @@ const AddProduct = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Product Added:', product);
-        alert(`Product Added: ${product.productName}, Price: ${product.price}, Quantity: ${product.quantity}`);
-        setProduct({ productName: '', price: '', quantity: '' });
-    };
 
+        try {
+            const response = await axios.post('http://localhost:3001/addproduct', product, {
+                withCredentials: true 
+            });
+
+            console.log('Product Added:', response.data);
+            alert(`Product Added: ${product.productName}, Price: ${product.price}, Quantity: ${product.quantity}`);
+            
+            // Clear the form after success
+            setProduct({ productName: '', price: '', quantity: '' });
+            setSuccess(true);
+            setError(null); // Clear any previous error
+        } catch (err) {
+            console.error(err);
+            setError('Failed to add the product. Please try again.');
+            setSuccess(false);
+        }
+    };
     return (
         <>
             <VendorNavbar />

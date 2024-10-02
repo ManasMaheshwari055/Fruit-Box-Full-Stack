@@ -1,13 +1,43 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './invoice.css';
 
 function Invoice() {
     const location = useLocation();
-    const state = location.state || {}; // Add a default empty object if state is null
-    console.log(state);
+    const navigate = useNavigate();
+    const state = location.state || {}; 
+    const { cartItems = [], totalPrice = 0, platformFee = 0, finalTotal = 0, orderId = 'N/A', userID, vendorID } = state; // Include userID and vendorID
 
-    const { cartItems = [], totalPrice = 0, platformFee = 0, finalTotal = 0, orderId = 'N/A' } = state;
+    const handlePlaceOrder = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cartItems,
+                    totalPrice,
+                    platformFee,
+                    finalTotal,
+                    userID, // Pass userID
+                    vendorID // Pass vendorID
+                }),
+                credentials: 'include', // To send session cookies with request
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                alert('Order placed successfully!');
+                navigate('/userdashboard');
+            } else {
+                alert('Failed to place order. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error placing order:', error);
+            alert('An error occurred. Please try again.');
+        }
+    };
 
     return (
         <div className="invoice-container">
@@ -33,7 +63,7 @@ function Invoice() {
                     <p style={{ color: 'green', fontSize: '1.5em' }}><strong>Final Total:</strong> Rs. {finalTotal}</p>
                 </div>
             </div>
-            <button className="back-button">Place Order</button>
+            <button className="back-button" onClick={handlePlaceOrder}>Place Order</button>
             <Link to="/userdashboard">
                 <button className="back-button">Back to Dashboard</button>
             </Link>
