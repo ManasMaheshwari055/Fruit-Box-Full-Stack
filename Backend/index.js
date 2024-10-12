@@ -473,21 +473,52 @@ app.get('/cart-items', (req, res) => {
 });
 
 app.delete('/cart-items', (req, res) => {
-    const { cartID, productID } = req.query;  // Use req.query to get the parameters
+    const { cartID, productID } = req.query; // Get cartID and productID from query parameters
 
+    // Check if cartID and productID are provided
     if (!cartID || !productID) {
-        return res.status(400).json({ message: 'Missing cartID or productID' });
+        return res.status(400).json({ message: 'cartID and productID are required' });
     }
 
-    const query = 'DELETE FROM CartItems WHERE cartID = ? AND productID = ?';
-    connection.query(query, [cartID, productID], (err, result) => {
+    // Query to delete the item from the CartItems table
+    const query = `DELETE FROM CartItems WHERE cartID = ? AND productID = ?`;
+
+    db.query(query, [cartID, productID], (err, results) => {
         if (err) {
-            return res.status(500).json({ message: 'Failed to remove cart item' });
+            console.error('Error removing item from cart:', err); // Log the error for debugging
+            return res.status(500).json({ message: 'Server error while removing item from cart' });
         }
-        res.status(200).json({ message: 'Cart item removed successfully' });
+
+        // Check if any rows were affected
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ message: 'Item not found in cart' });
+        }
+
+        res.status(200).json({ message: 'Item removed successfully' }); // Success response
     });
 });
 
+app.delete('/cart', (req, res) => {
+    const userID = req.session.userID; // Get userID from session
+    const cartID = 'C' + userID; // Define cartID based on userID
+
+    // Check if the user is logged in
+    if (!userID) {
+        return res.status(401).json({ message: 'User not logged in' });
+    }
+
+    // Query to delete all items from the CartItems table for the user's cartID
+    const query = `DELETE FROM CartItems WHERE cartID = ?`;
+
+    db.query(query, [cartID], (err, results) => {
+        if (err) {
+            console.error('Error clearing cart:', err);
+            return res.status(500).json({ message: 'Server error while clearing cart' });
+        }
+
+        res.status(200).json({ message: 'Cart cleared successfully' }); // Success response
+    });
+});
 
 
 // Route to update the total amount for the user
