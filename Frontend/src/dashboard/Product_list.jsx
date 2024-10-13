@@ -16,14 +16,14 @@ function Product_list() {
           </Link>
         </div>
 
-        {/* Exotic Veggies Card */}
+        {/* Exotic Veggies Card
         <div className="product-card">
-          {/* <img src={veggiesImg} alt="Exotic Veggies" className="product-image" /> */}
+          <img src={veggiesImg} alt="Exotic Veggies" className="product-image" />
           <h2 className="product-title">Exotic Veggies</h2>
           <Link to="/veggiesection">
             <button className="product-button">Shop Now</button>
           </Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );

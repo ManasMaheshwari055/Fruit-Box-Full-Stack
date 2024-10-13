@@ -455,11 +455,18 @@ app.get('/cart-items', (req, res) => {
     // Define the cartID based on the userID
     const cartID = 'C' + userID;
 
-    // Query to fetch cart items including cartID
+    // Query to fetch cart items including cartID and image URL
     const query = `
-        SELECT CartItems.productID, CartItems.quantity, product.productName AS name, product.price, CartItems.cartID
+        SELECT 
+            CartItems.productID, 
+            CartItems.quantity, 
+            product.productName AS name, 
+            product.price, 
+            CartItems.cartID,
+            fruits_images.imageURL AS image
         FROM CartItems 
         JOIN product ON CartItems.productID = product.productID 
+        JOIN fruits_images ON product.productName = fruits_images.name
         WHERE CartItems.cartID = ?`;
 
     db.query(query, [cartID], (err, results) => {
@@ -468,9 +475,10 @@ app.get('/cart-items', (req, res) => {
             return res.status(500).json({ message: 'Server error' });
         }
 
-        res.status(200).json(results);  // Send back the cart items including cartID
+        res.status(200).json(results);  // Send back the cart items including cartID and image
     });
 });
+
 
 app.delete('/cart-items', (req, res) => {
     const { cartID, productID } = req.query; // Get cartID and productID from query parameters
@@ -561,72 +569,110 @@ app.get('/products', (req, res) => {
 });
 
 
-app.get('/addproduct', (req, res) => {
+app.get('/addproduct',  (req, res) => {
     const vendorID = req.session.vendorID; // Assuming vendorID is stored in the session
 
     if (!vendorID) {
         return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
     }
-    // Return the list of products
-    return res.status(200).jsoxn({ message: 'Products retrieved successfully', products });
-});
 
+    // SQL query to fetch products for the logged-in vendor
+    const query = 'SELECT * FROM product WHERE vendorID = ?';
 
-
-//addproduct route
-app.post('/addproduct', (req, res) => {
-    const { productName, price, quantity } = req.body;
-    const vendorID = req.session.vendorID;
-    const vendorName = req.session.vendorName;
-    console.log(vendorID);
-
-    // Check if the vendor is logged in
-    if (!vendorID || !vendorName) {
-        return res.status(401).json({ message: 'Unauthorized. Vendor not logged in.' });
-    }
-
-    // Check for missing required fields
-    if (!productName || !price || !quantity) {
-        return res.status(400).json({ message: 'Missing required product fields.' });
-    }
-
-    // Check if the product already exists for this vendor
-    const queryCheckProduct = `SELECT * FROM product WHERE vendorID = ? AND productName = ?`;
-    db.query(queryCheckProduct, [vendorID, productName], (err, result) => {
+   db.query(query, [vendorID], (err, results) => {
         if (err) {
-            console.error('Error querying database:', err);
-            return res.status(500).json({ message: 'Database error', error: err });
+            console.error('Error fetching products:', err);
+            return res.status(500).json({ message: 'Internal Server Error' });
         }
 
-        if (result.length > 0) {
-            // Product exists, update the quantity
-            const updatedQuantity = result[0].quantity + parseInt(quantity);
-            const queryUpdateProduct = `UPDATE product SET quantity = ? WHERE productID = ?`;
-
-            db.query(queryUpdateProduct, [updatedQuantity, result[0].productID], (err, updateResult) => {
-                if (err) {
-                    console.error('Error updating product quantity:', err);
-                    return res.status(500).json({ message: 'Failed to update product quantity', error: err });
-                }
-                return res.status(200).json({ message: 'Product quantity updated successfully', productID: result[0].productID });
-            });
-        } else {
-            // Product doesn't exist, insert a new product
-            const newProductID = uuidv4();
-            const queryInsertProduct = `INSERT INTO product (productID, vendorID,vendorName , productName, price, quantity) VALUES (?, ?, ?, ?, ?,?)`;
-
-            db.query(queryInsertProduct, [newProductID, vendorID, vendorName, productName, parseFloat(price), parseInt(quantity)], (err, insertResult) => {
-                if (err) {
-                    console.error('Error inserting new product:', err);
-                    return res.status(500).json({ message: 'Failed to add new product', error: err });
-                }
-                // Emit an event to notify all connected clients about the new product
-                io.emit('newProduct', { productID: newProductID, productName, price, quantity });
-                return res.status(201).json({ message: 'New product added successfully', productID: newProductID });
-            });
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No products found for this vendor.' });
         }
+
+        // Return the list of productsw
+        return res.status(200).json({ message: 'Products retrieved successfully', products: results });
     });
 });
+
+app.post('/addproduct', (req, res) => {
+    // Destructure the required fields from the request body
+    const { vendorID, productName, price, quantity, unit } = req.body;
+
+    // Validate input fields
+    if (!vendorID || !productName || !price || !quantity || !unit) {
+        return res.status(400).json({ error: 'All fields are required: vendorID, productName, price, quantity, unit.' });
+    }
+
+    // Generate a unique product ID
+    const productID = uuidv4();
+
+    console.log('Received vendorID:', vendorID);
+
+    // Convert quantity to a number and validate it
+    const newQuantity = Number(quantity);
+    if (isNaN(newQuantity) || newQuantity <= 0) {
+        return res.status(400).json({ error: 'Quantity must be a valid positive number.' });
+    }
+
+    // Query to fetch imageURL based on productName
+    const imageQuery = 'SELECT imageURL FROM fruits_images WHERE name = ?';
+    
+    db.query(imageQuery, [productName], (err, imageResults) => {
+        if (err) {
+            console.error('Error fetching image URL:', err); // Log the error for debugging
+            return res.status(500).json({ error: 'Error fetching image URL', details: err.message });
+        }
+
+        if (imageResults.length === 0) {
+            return res.status(404).json({ error: 'Image not found for the given product name' });
+        }
+
+        const imageURL = imageResults[0].imageURL;
+
+        // Query to check if the product already exists
+        const checkQuery = 'SELECT * FROM product WHERE productName = ? AND vendorID = ?';
+        
+        db.query(checkQuery, [productName, vendorID], (err, results) => {
+            if (err) {
+                console.error('Error checking product:', err); // Log the error for debugging
+                return res.status(500).json({ error: 'Error checking product', details: err.message });
+            }
+
+            if (results.length > 0) {
+                const existingProduct = results[0];
+
+                // Check if the product details are the same
+                if (existingProduct.price === price && existingProduct.quantity === newQuantity) {
+                    return res.status(400).json({ error: 'Product already added with the same details' });
+                } else {
+                    // Update existing product by adding the new quantity
+                    const updatedQuantity = existingProduct.quantity + newQuantity; // Add new quantity to existing quantity
+                    const updateQuery = 'UPDATE product SET price = ?, quantity = ?, imageURL = ? WHERE productName = ? AND vendorID = ?';
+                    
+                    db.query(updateQuery, [price, updatedQuantity, imageURL, productName, vendorID], (err, result) => {
+                        if (err) {
+                            console.error('Error updating product:', err); // Log the error for debugging
+                            return res.status(500).json({ error: 'Error updating product', details: err.message });
+                        }
+                        return res.json({ message: 'Product updated successfully' });
+                    });
+                }
+            } else {
+                // Insert new product
+                const insertQuery = 'INSERT INTO product (productID, vendorID, productName, price, quantity, imageURL) VALUES (?, ?, ?, ?, ?, ?)';
+                db.query(insertQuery, [productID, vendorID, productName, price, newQuantity, imageURL], (err, result) => {
+                    if (err) {
+                        console.error('Error adding product:', err); // Log the error for debugging
+                        return res.status(500).json({ error: 'Error adding product', details: err.message });
+                    }
+                    res.json({ message: 'Product added successfully' });
+                });
+            }
+        });
+    });
+});
+
+
 //io connection 
 io.on('connection', (socket) => {
     console.log('A user connected');

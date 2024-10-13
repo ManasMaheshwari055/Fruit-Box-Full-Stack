@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import VendorNavbar from './VendorNavbar';
 import axios from 'axios';
@@ -8,11 +7,11 @@ const AddProduct = () => {
         productName: '',
         price: '',
         quantity: '',
+        unit: 'piece', // Added a field for unit selection
     });
     const [error, setError] = useState(null); // For handling any errors
     const [success, setSuccess] = useState(false); // For handling success state
 
-  
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setProduct({
@@ -24,24 +23,35 @@ const AddProduct = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const storedVendor = JSON.parse(localStorage.getItem('Vendors'));
+        const vendorID = storedVendor ? storedVendor.vendorID : '';
+        console.log(vendorID);
+        const productWithVendorID = {
+            ...product,
+            vendorID, // Add vendorID to the product object
+        };
+
         try {
-            const response = await axios.post('http://localhost:3001/addproduct', product, {
+            const response = await axios.post('http://localhost:3001/addproduct', productWithVendorID, {
                 withCredentials: true 
             });
 
-            console.log('Product Added:', response.data);
-            alert(`Product Added: ${product.productName}, Price: ${product.price}, Quantity: ${product.quantity}`);
-            
+            alert(response.data.message); // Display success message
             // Clear the form after success
-            setProduct({ productName: '', price: '', quantity: '' });
+            setProduct({ productName: '', price: '', quantity: '', unit: 'piece' });
             setSuccess(true);
             setError(null); // Clear any previous error
         } catch (err) {
-            console.error(err);
-            setError('Failed to add the product. Please try again.');
+            if (err.response && err.response.data) {
+                // Display the error message from the server
+                setError(err.response.data.error);
+            } else {
+                setError('Failed to add the product. Please try again.');
+            }
             setSuccess(false);
         }
     };
+
     return (
         <>
             <VendorNavbar />
@@ -86,7 +96,7 @@ const AddProduct = () => {
                     {/* Price */}
                     <div style={{ marginBottom: '15px' }}>
                         <label htmlFor="price" style={{ display: 'block', marginBottom: '8px', fontSize: '16px', color: '#d1d1d1' }}>
-                            Price:
+                            Price (per {product.unit}):
                         </label>
                         <input
                             type="number"
@@ -106,6 +116,33 @@ const AddProduct = () => {
                                 boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
                             }}
                         />
+                    </div>
+
+                    {/* Unit Type (Piece or 500 grams) */}
+                    <div style={{ marginBottom: '15px' }}>
+                        <label htmlFor="unit" style={{ display: 'block', marginBottom: '8px', fontSize: '16px', color: '#d1d1d1' }}>
+                            Unit Type:
+                        </label>
+                        <select
+                            id="unit"
+                            name="unit"
+                            value={product.unit}
+                            onChange={handleInputChange}
+                            required
+                            style={{
+                                padding: '10px',
+                                width: '100%',
+                                borderRadius: '5px',
+                                border: 'none',
+                                backgroundColor: '#2C2F36',
+                                color: '#fff',
+                                fontSize: '16px',
+                                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                            }}
+                        >
+                            <option value="piece">Per Piece</option>
+                            <option value="500gm">Per 500 Grams</option>
+                        </select>
                     </div>
 
                     {/* Quantity */}
